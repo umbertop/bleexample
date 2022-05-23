@@ -1,0 +1,23 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        maven { url "https://jitpack.io/" }
+    }
+}
+rootProject.name = "BleExample"
+include ':app'
+include ':app:app_data'
+include ':app:app_domain'
+include ':app:app_presentation'
+
+include ':core'
+include ':core-ui'
