@@ -7,6 +7,7 @@ import android.bluetooth.BluetoothAdapter
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,8 +18,10 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -26,11 +29,11 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.accompanist.permissions.rememberPermissionState
 import me.palazzini.bleexample.app_presentation.components.BleScanDeviceView
+import me.palazzini.bleexample.core.permissions.allPermanentlyDenied
 import me.palazzini.bleexample.core.permissions.isPermanentlyDenied
 import me.palazzini.bleexample.core.util.UiEvent
 import me.palazzini.bleexample.core_ui.LocalSpacing
 import androidx.compose.material3.ExperimentalMaterial3Api as ExpM3Api
-import androidx.compose.material3.Text as M3Text
 
 
 @ExperimentalPermissionsApi
@@ -54,7 +57,12 @@ fun MainView(
         )
     }
 
-    val permissionState = rememberPermissionState(Manifest.permission.ACCESS_COARSE_LOCATION)
+    val permissionState = rememberMultiplePermissionsState(
+        permissions = listOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+    )
 
     LaunchedEffect(key1 = Unit) {
         viewModel.uiEvent.collect { event ->
@@ -81,7 +89,8 @@ fun MainView(
                     return@LifecycleEventObserver
                 }
 
-                permissionState.launchPermissionRequest()
+                // permissionState.launchPermissionRequest()
+                permissionState.launchMultiplePermissionRequest()
             }
         }
 
@@ -93,7 +102,7 @@ fun MainView(
     }
 
     when {
-        permissionState.hasPermission -> {
+        permissionState.allPermissionsGranted -> {
             viewModel.onEvent(MainEvent.OnLocationPermissionStateChanged(permissionState))
             DevicesView(viewModel)
         }
@@ -101,7 +110,7 @@ fun MainView(
             viewModel.onEvent(MainEvent.OnLocationPermissionStateChanged(permissionState))
             LocationDeniedView()
         }
-        permissionState.isPermanentlyDenied -> {
+        permissionState.allPermanentlyDenied -> {
             viewModel.onEvent(MainEvent.OnLocationPermissionStateChanged(permissionState))
             LocationPermanentlyDeniedView()
         }
@@ -153,6 +162,7 @@ fun DevicesView(
     viewModel: MainViewModel
 ) {
     val spacing = LocalSpacing.current
+    val state = viewModel.state
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -160,14 +170,20 @@ fun DevicesView(
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(.5f)
+                .weight(1f)
+                .border(1.dp, Color.Red)
         ) {
-            items(viewModel.state.devices) { scanResult ->
+            items(state.devices) { device ->
                 BleScanDeviceView(
                     modifier = Modifier.padding(spacing.spaceMedium),
-                    scanResult = scanResult,
+                    scanResult = device,
+                    state = state,
                     onConnectClick = {
-                        viewModel.onEvent(MainEvent.OnConnectDeviceClicked(it))
+                        if (state.isConnectedToDevice) {
+                            viewModel.onEvent(MainEvent.OnDisconnectToDeviceClicked(it))
+                        } else {
+                            viewModel.onEvent(MainEvent.OnConnectDeviceClicked(it))
+                        }
                     }
                 )
             }
@@ -176,10 +192,11 @@ fun DevicesView(
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(.5f)
+                .weight(1f)
+                .border(1.dp, Color.Blue)
         ) {
             items(viewModel.state.commands) {
-                if(it == null) {
+                if (it == null) {
                     Text(text = "Empty command")
                 } else {
                     Text(text = it.data)

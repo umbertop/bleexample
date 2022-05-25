@@ -11,13 +11,18 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import me.palazzini.bleexample.app_domain.model.BleDeviceScanResult
+import me.palazzini.bleexample.app_presentation.MainState
 import no.nordicsemi.android.support.v18.scanner.ScanResult
 
+@ExperimentalPermissionsApi
 @SuppressLint("MissingPermission")
 @Composable
 fun BleScanDeviceView(
     modifier: Modifier,
-    scanResult: ScanResult,
+    state: MainState,
+    scanResult: BleDeviceScanResult,
     onConnectClick: (device: BluetoothDevice) -> Unit
 ) {
     Row(
@@ -29,12 +34,12 @@ fun BleScanDeviceView(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.Start
         ) {
-            Text(text = scanResult.device.name ?: "")
-            Text(text = scanResult.device.address ?: "")
+            Text(text = scanResult.name)
+            Text(text = scanResult.address)
         }
 
         Button(onClick = { onConnectClick(scanResult.device) }) {
-            Text(text = "Connect")
+            Text(text = if (state.isConnectedToDevice) "Disconnect" else "Connect")
         }
     }
 }

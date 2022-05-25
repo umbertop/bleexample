@@ -16,7 +16,7 @@ import me.palazzini.bleexample.app_domain.model.Command
 import me.palazzini.bleexample.app_domain.repository.BleManager
 import me.palazzini.bleexample.app_domain.repository.BleScanner
 import me.palazzini.bleexample.core.util.UiEvent
-import no.nordicsemi.android.ble.ktx.suspend
+import no.nordicsemi.android.ble.ConnectRequest
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -33,6 +33,8 @@ class MainViewModel @Inject constructor(
     private val _uiEvent = Channel<UiEvent>()
     val uiEvent = _uiEvent.receiveAsFlow()
 
+    private var connectRequest: ConnectRequest? = null
+
     init {
         state = state.copy(
             isBluetoothEnabled = bleScanner.isBleEnabled()
@@ -41,6 +43,7 @@ class MainViewModel @Inject constructor(
         if (!state.isBluetoothEnabled) {
             onEvent(MainEvent.OnRequestEnableBluetooth)
         } else {
+            bleScanner.enableBle()
             observeBleDevices()
         }
     }
@@ -51,7 +54,7 @@ class MainViewModel @Inject constructor(
                 state = state.copy(isBluetoothEnabled = event.isEnabled)
 
                 state.locationPermissionState?.let {
-                    if (it.hasPermission && state.isBluetoothEnabled) {
+                    if (it.allPermissionsGranted && state.isBluetoothEnabled) {
                         observeBleDevices()
                     }
                 }
@@ -59,36 +62,38 @@ class MainViewModel @Inject constructor(
             is MainEvent.OnLocationPermissionStateChanged -> {
                 state = state.copy(locationPermissionState = event.state)
 
-                if (event.state.hasPermission && state.isBluetoothEnabled) {
+                if (event.state.allPermissionsGranted && state.isBluetoothEnabled) {
                     observeBleDevices()
                 }
             }
+            is MainEvent.OnDisconnectToDeviceClicked -> {
+                viewModelScope.launch {
+                    bleManager.disconnect()
+                }
+
+                state = state.copy(isConnectedToDevice = false)
+            }
             is MainEvent.OnConnectDeviceClicked -> {
                 viewModelScope.launch {
-                    bleManager.connect(event.device)
-                        .retry(3, 100)
+                    connectRequest?.cancelPendingConnection()
+                    connectRequest = bleManager.connect(event.device)
+                        .retry(3, 500)
                         .timeout(15_000)
                         .useAutoConnect(true)
-                        /*
-                        .done {
-                            Timber.d("Connected to device")
-                            initDeviceDataTransfer()
-                        }
                         .fail { device, status ->
-                            Timber.d(status.toString())
+                            Timber.w("Cannot connect to device with address: %s", device.address)
                         }
-                        */
                         .then {
                             Timber.d(it.address)
                             initDeviceDataTransfer()
                         }
-                        .suspend()
+
+                    connectRequest?.enqueue()
                 }
             }
             is MainEvent.OnRequestEnableBluetooth -> {
-                viewModelScope.launch {
-                    _uiEvent.send(UiEvent.RequestEnableBluetooth)
-                }
+                bleScanner.enableBle()
+                onEvent(MainEvent.OnBluetoothEnableChanged(bleScanner.isBleEnabled()))
             }
         }
     }
@@ -98,7 +103,7 @@ class MainViewModel @Inject constructor(
             .onEach { result ->
                 val temp = state.devices.toMutableList().run {
                     add(result)
-                    distinctBy { it.device.address }
+                    distinctBy { it.address }
                 }
 
                 state = state.copy(devices = temp)
@@ -106,6 +111,8 @@ class MainViewModel @Inject constructor(
     }
 
     private fun initDeviceDataTransfer() {
+        state = state.copy(isConnectedToDevice = true)
+
         bleManager.commandState.onEach {
             val temp = state.commands.toMutableList().run {
                 add(it)

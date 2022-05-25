@@ -46,7 +46,6 @@ class BleManagerImpl(
             enableNotifications(characteristic).enqueue()
         }
 
-
         override fun isRequiredServiceSupported(gatt: BluetoothGatt): Boolean {
             gatt.getService(SERVICE_UUID)?.run {
                 characteristic = getCharacteristic(CHARACTERISTIC_UUID)
@@ -102,13 +101,6 @@ class BleManagerImpl(
             Command.send(command),
             BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
         ).with(commandCallback).enqueue()
-
-        repeat(10) {
-            readCharacteristic(
-                characteristic,
-            ).with(commandCallback).enqueue()
-            // delay(500)
-        }
     }
 
     // endregion

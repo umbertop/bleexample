@@ -24,14 +24,8 @@ object AppDataModule {
 
     @Provides
     @Singleton
-    fun provideBleScanner(
-        @ApplicationContext context: Context,
-        bluetoothManager: BluetoothManager
-    ): BleScanner =
-        BleScannerImpl(
-            context = context,
-            bluetoothManager = bluetoothManager
-        )
+    fun provideBleScanner(bluetoothManager: BluetoothManager): BleScanner =
+        BleScannerImpl(bluetoothManager = bluetoothManager)
 
     @Provides
     @Singleton
