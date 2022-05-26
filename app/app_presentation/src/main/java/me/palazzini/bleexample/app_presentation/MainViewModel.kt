@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import me.palazzini.bleexample.app_domain.di.AndroidIntentBleScanner
+import me.palazzini.bleexample.app_domain.di.NordicBleScanner
 import me.palazzini.bleexample.app_domain.model.Command
 import me.palazzini.bleexample.app_domain.repository.BleManager
 import me.palazzini.bleexample.app_domain.repository.BleScanner
@@ -23,7 +25,7 @@ import javax.inject.Inject
 @ExperimentalPermissionsApi
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val bleScanner: BleScanner,
+    @NordicBleScanner private val bleScanner: BleScanner,
     private val bleManager: BleManager
 ) : ViewModel() {
 
@@ -68,7 +70,8 @@ class MainViewModel @Inject constructor(
             }
             is MainEvent.OnDisconnectToDeviceClicked -> {
                 viewModelScope.launch {
-                    bleManager.disconnect()
+                    bleManager.sendCommand(Command.Stop)
+                    bleManager.disconnect().enqueue()
                 }
 
                 state = state.copy(isConnectedToDevice = false)

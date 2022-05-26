@@ -3,7 +3,6 @@ package me.palazzini.bleexample.app_data.repository
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
-import android.content.Context
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.onFailure
 import kotlinx.coroutines.flow.Flow
@@ -11,8 +10,9 @@ import kotlinx.coroutines.flow.callbackFlow
 import me.palazzini.bleexample.app_domain.model.BleDeviceScanResult
 import me.palazzini.bleexample.app_domain.repository.BleScanner
 import no.nordicsemi.android.support.v18.scanner.*
+import timber.log.Timber
 
-class BleScannerImpl(
+class NordicBleScanner(
     bluetoothManager: BluetoothManager
 ) : BleScanner {
 
@@ -28,9 +28,16 @@ class BleScannerImpl(
 
     override fun observeDevices(): Flow<BleDeviceScanResult> = callbackFlow {
         val scanCallback = object : ScanCallback() {
+            @SuppressLint("MissingPermission")
             override fun onScanResult(callbackType: Int, result: ScanResult) {
+                Timber.d(
+                    "Device (%s) - %s",
+                    result.scanRecord?.deviceName ?: result.device.name ?: "No Name",
+                    result.device.address
+                )
+
                 val scanResult = BleDeviceScanResult(
-                    name = result.scanRecord?.deviceName ?: "",
+                    name = result.scanRecord?.deviceName ?: result.device.name ?: "",
                     address = result.device.address,
                     device = result.device
                 )
@@ -41,7 +48,15 @@ class BleScannerImpl(
             }
 
             override fun onBatchScanResults(results: MutableList<ScanResult>) {
+                Timber.d("Found %d devices", results.size)
+
                 results.forEach { result ->
+                    Timber.d(
+                        "Device (%s) - %s",
+                        result.scanRecord?.deviceName ?: "No Name",
+                        result.device.address
+                    )
+
                     val scanResult = BleDeviceScanResult(
                         name = result.scanRecord?.deviceName ?: "",
                         address = result.device.address,
@@ -60,7 +75,7 @@ class BleScannerImpl(
         }
 
         val filters = listOf(
-            ScanFilter.Builder().setDeviceName(BLE_DEVICE_NAME).build()
+            ScanFilter.Builder().setDeviceName(BleScanner.BLE_DEVICE_NAME).build()
         )
 
         val settings = ScanSettings.Builder()
@@ -76,9 +91,5 @@ class BleScannerImpl(
         awaitClose {
             scanner.stopScan(scanCallback)
         }
-    }
-
-    companion object {
-        const val BLE_DEVICE_NAME = "ILLUSIO_GATTS"
     }
 }

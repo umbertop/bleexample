@@ -78,7 +78,7 @@ class BleManagerImpl(
 
 
         override fun onDataSent(device: BluetoothDevice, data: Data) {
-
+            log(Log.DEBUG, "Data sent")
         }
 
         override fun onInvalidDataReceived(device: BluetoothDevice, data: Data) {
