@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
-import me.palazzini.bleexample.app_domain.di.AndroidIntentBleScanner
 import me.palazzini.bleexample.app_domain.di.NordicBleScanner
 import me.palazzini.bleexample.app_domain.model.Command
 import me.palazzini.bleexample.app_domain.repository.BleManager
@@ -55,16 +54,23 @@ class MainViewModel @Inject constructor(
             is MainEvent.OnBluetoothEnableChanged -> {
                 state = state.copy(isBluetoothEnabled = event.isEnabled)
 
-                state.locationPermissionState?.let {
+                state.locationPermissionsState?.let {
                     if (it.allPermissionsGranted && state.isBluetoothEnabled) {
                         observeBleDevices()
                     }
                 }
             }
             is MainEvent.OnLocationPermissionStateChanged -> {
-                state = state.copy(locationPermissionState = event.state)
+                state = state.copy(locationPermissionsState = event.state)
 
-                if (event.state.allPermissionsGranted && state.isBluetoothEnabled) {
+                if (state.isBluetoothEnabled && areAllPermissionsGranted()) {
+                    observeBleDevices()
+                }
+            }
+            is MainEvent.OnBluetoothScanPermissionStateChanged -> {
+                state = state.copy(bluetoothPermissionState = event.state)
+
+                if (state.isBluetoothEnabled && areAllPermissionsGranted()) {
                     observeBleDevices()
                 }
             }
@@ -83,7 +89,7 @@ class MainViewModel @Inject constructor(
                         .retry(3, 500)
                         .timeout(15_000)
                         .useAutoConnect(true)
-                        .fail { device, status ->
+                        .fail { device, _ ->
                             Timber.w("Cannot connect to device with address: %s", device.address)
                         }
                         .then {
@@ -99,6 +105,13 @@ class MainViewModel @Inject constructor(
                 onEvent(MainEvent.OnBluetoothEnableChanged(bleScanner.isBleEnabled()))
             }
         }
+    }
+
+    private fun areAllPermissionsGranted(): Boolean {
+        val isLocationGranted = state.locationPermissionsState?.allPermissionsGranted ?: false
+        val isBluetoothScanGranted = state.bluetoothPermissionState?.hasPermission ?: false
+
+        return isLocationGranted && isBluetoothScanGranted
     }
 
     private fun observeBleDevices() {

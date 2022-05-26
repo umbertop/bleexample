@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.bluetooth.BluetoothAdapter
 import android.content.Intent
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.border
@@ -57,12 +58,18 @@ fun MainView(
         )
     }
 
-    val permissionState = rememberMultiplePermissionsState(
+    val locationPermissionsState = rememberMultiplePermissionsState(
         permissions = listOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION
         )
     )
+
+    val bluetoothScanPermissionState = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        rememberPermissionState(Manifest.permission.BLUETOOTH_SCAN)
+    } else {
+        null
+    }
 
     LaunchedEffect(key1 = Unit) {
         viewModel.uiEvent.collect { event ->
@@ -89,8 +96,8 @@ fun MainView(
                     return@LifecycleEventObserver
                 }
 
-                // permissionState.launchPermissionRequest()
-                permissionState.launchMultiplePermissionRequest()
+                locationPermissionsState.launchMultiplePermissionRequest()
+                bluetoothScanPermissionState?.launchPermissionRequest()
             }
         }
 
@@ -102,17 +109,26 @@ fun MainView(
     }
 
     when {
-        permissionState.allPermissionsGranted -> {
-            viewModel.onEvent(MainEvent.OnLocationPermissionStateChanged(permissionState))
+        locationPermissionsState.allPermissionsGranted
+                && bluetoothScanPermissionState?.hasPermission ?: true -> {
+            viewModel.onEvent(MainEvent.OnLocationPermissionStateChanged(locationPermissionsState))
             DevicesView(viewModel)
         }
-        permissionState.shouldShowRationale -> {
-            viewModel.onEvent(MainEvent.OnLocationPermissionStateChanged(permissionState))
+        locationPermissionsState.shouldShowRationale -> {
+            viewModel.onEvent(MainEvent.OnLocationPermissionStateChanged(locationPermissionsState))
             LocationDeniedView()
         }
-        permissionState.allPermanentlyDenied -> {
-            viewModel.onEvent(MainEvent.OnLocationPermissionStateChanged(permissionState))
+        locationPermissionsState.allPermanentlyDenied -> {
+            viewModel.onEvent(MainEvent.OnLocationPermissionStateChanged(locationPermissionsState))
             LocationPermanentlyDeniedView()
+        }
+        bluetoothScanPermissionState?.shouldShowRationale ?: false -> {
+            viewModel.onEvent(MainEvent.OnBluetoothScanPermissionStateChanged(bluetoothScanPermissionState!!))
+            BluetoothScanDeniedView()
+        }
+        bluetoothScanPermissionState?.isPermanentlyDenied ?: false -> {
+            viewModel.onEvent(MainEvent.OnBluetoothScanPermissionStateChanged(bluetoothScanPermissionState!!))
+            BluetoothScanPermanentlyDeniedView()
         }
     }
 }
@@ -149,6 +165,44 @@ fun LocationPermanentlyDeniedView() {
     ) {
         Text(
             text = "Location permission is permanently denied. " +
+                    "You can enable it in the app settings."
+        )
+        // TODO: Show button to go to app settings
+    }
+}
+
+@Composable
+fun BluetoothScanDeniedView() {
+    val spacing = LocalSpacing.current
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(spacing.spaceMedium),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Bluetooth scan permission is needed " +
+                    "to scan for BLE devices"
+        )
+        // TODO: Show button to requesting permission
+    }
+}
+
+@Composable
+fun BluetoothScanPermanentlyDeniedView() {
+    val spacing = LocalSpacing.current
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(spacing.spaceMedium),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Bluetooth scan permission is permanently denied. " +
                     "You can enable it in the app settings."
         )
         // TODO: Show button to go to app settings

@@ -10,6 +10,7 @@ import no.nordicsemi.android.support.v18.scanner.ScanResult
 sealed class MainEvent {
     data class OnBluetoothEnableChanged(val isEnabled: Boolean): MainEvent()
     data class OnLocationPermissionStateChanged(val state: MultiplePermissionsState): MainEvent()
+    data class OnBluetoothScanPermissionStateChanged(val state: PermissionState): MainEvent()
 
     data class OnConnectDeviceClicked(val device: BluetoothDevice): MainEvent()
     data class OnDisconnectToDeviceClicked(val device: BluetoothDevice): MainEvent()
