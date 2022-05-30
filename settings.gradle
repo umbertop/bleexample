@@ -15,9 +15,9 @@ dependencyResolutionManagement {
 }
 rootProject.name = "BleExample"
 include ':app'
-include ':app:app_data'
-include ':app:app_domain'
-include ':app:app_presentation'
+include ':app:data'
+include ':app:domain'
+include ':app:presentation'
 
 include ':core'
 include ':core-ui'

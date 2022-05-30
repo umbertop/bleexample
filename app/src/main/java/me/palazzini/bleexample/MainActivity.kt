@@ -13,7 +13,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import dagger.hilt.android.AndroidEntryPoint
-import me.palazzini.bleexample.app_presentation.MainView
+import me.palazzini.bleexample.presentation.MainView
 import me.palazzini.bleexample.ui.theme.BleExampleTheme
 
 @ExperimentalPermissionsApi

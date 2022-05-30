@@ -4,7 +4,7 @@ object Modules {
     const val core = ":core"
     const val coreUi = ":core-ui"
 
-    const val appData = ":app:app_data"
-    const val appDomain = ":app:app_domain"
-    const val appPresentation = ":app:app_presentation"
+    const val appData = ":app:data"
+    const val appDomain = ":app:domain"
+    const val appPresentation = ":app:presentation"
 }
