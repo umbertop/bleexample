@@ -9,5 +9,9 @@ val PermissionState.isPermanentlyDenied: Boolean
     get() = !shouldShowRationale && !hasPermission
 
 @ExperimentalPermissionsApi
+val MultiplePermissionsState.onePermanentlyDenied: Boolean
+    get() = this.permissions.any { it.isPermanentlyDenied }
+
+@ExperimentalPermissionsApi
 val MultiplePermissionsState.allPermanentlyDenied: Boolean
     get() = this.permissions.all { it.isPermanentlyDenied }

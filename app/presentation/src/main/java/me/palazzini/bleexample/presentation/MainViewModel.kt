@@ -45,7 +45,6 @@ class MainViewModel @Inject constructor(
             onEvent(MainEvent.OnRequestEnableBluetooth)
         } else {
             bleScanner.enableBle()
-            observeBleDevices()
         }
     }
 
@@ -54,23 +53,14 @@ class MainViewModel @Inject constructor(
             is MainEvent.OnBluetoothEnableChanged -> {
                 state = state.copy(isBluetoothEnabled = event.isEnabled)
 
-                state.locationPermissionsState?.let {
-                    if (it.allPermissionsGranted && state.isBluetoothEnabled) {
-                        observeBleDevices()
-                    }
+                state.permissions?.allPermissionsGranted?.let {
+                    if(event.isEnabled) observeBleDevices()
                 }
             }
-            is MainEvent.OnLocationPermissionStateChanged -> {
-                state = state.copy(locationPermissionsState = event.state)
+            is MainEvent.OnPermissionsChanged -> {
+                state = state.copy(permissions = event.state)
 
-                if (state.isBluetoothEnabled && areAllPermissionsGranted()) {
-                    observeBleDevices()
-                }
-            }
-            is MainEvent.OnBluetoothScanPermissionStateChanged -> {
-                state = state.copy(bluetoothPermissionState = event.state)
-
-                if (state.isBluetoothEnabled && areAllPermissionsGranted()) {
+                if(event.state.allPermissionsGranted){
                     observeBleDevices()
                 }
             }
@@ -105,13 +95,6 @@ class MainViewModel @Inject constructor(
                 onEvent(MainEvent.OnBluetoothEnableChanged(bleScanner.isBleEnabled()))
             }
         }
-    }
-
-    private fun areAllPermissionsGranted(): Boolean {
-        val isLocationGranted = state.locationPermissionsState?.allPermissionsGranted ?: false
-        val isBluetoothScanGranted = state.bluetoothPermissionState?.hasPermission ?: false
-
-        return isLocationGranted && isBluetoothScanGranted
     }
 
     private fun observeBleDevices() {

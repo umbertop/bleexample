@@ -8,10 +8,9 @@ import me.palazzini.bleexample.domain.model.Command
 
 @ExperimentalPermissionsApi
 data class MainState(
-    val isConnectedToDevice: Boolean = false,
     val isBluetoothEnabled: Boolean = false,
+    val isConnectedToDevice: Boolean = false,
+    val permissions: MultiplePermissionsState? = null,
     val devices: List<BleDeviceScanResult> = emptyList(),
-    val locationPermissionsState: MultiplePermissionsState? = null,
-    val bluetoothPermissionState: PermissionState? = null,
     val commands: List<Command?> = emptyList()
 )
