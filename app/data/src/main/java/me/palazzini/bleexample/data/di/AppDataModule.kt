@@ -8,11 +8,13 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import me.palazzini.bleexample.data.repository.BleManagerImpl
+import me.palazzini.bleexample.data.repository.TextReportRepository
 import me.palazzini.bleexample.domain.di.AndroidBleScanner
 import me.palazzini.bleexample.domain.di.AndroidIntentBleScanner
 import me.palazzini.bleexample.domain.di.NordicBleScanner
 import me.palazzini.bleexample.domain.repository.BleManager
 import me.palazzini.bleexample.domain.repository.BleScanner
+import me.palazzini.bleexample.domain.repository.ReportRepository
 import javax.inject.Singleton
 
 @Module
@@ -53,4 +55,10 @@ object AppDataModule {
     fun provideBleManager(
         @ApplicationContext context: Context
     ): BleManager = BleManagerImpl(context)
+
+    @Singleton
+    @Provides
+    fun provideTextReportRepository(
+        @ApplicationContext context: Context
+    ) : ReportRepository = TextReportRepository(context)
 }

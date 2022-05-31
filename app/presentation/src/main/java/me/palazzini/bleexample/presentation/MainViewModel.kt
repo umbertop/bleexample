@@ -12,11 +12,12 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import me.palazzini.bleexample.core.util.UiEvent
 import me.palazzini.bleexample.domain.di.NordicBleScanner
 import me.palazzini.bleexample.domain.model.Command
 import me.palazzini.bleexample.domain.repository.BleManager
 import me.palazzini.bleexample.domain.repository.BleScanner
-import me.palazzini.bleexample.core.util.UiEvent
+import me.palazzini.bleexample.domain.repository.ReportRepository
 import no.nordicsemi.android.ble.ConnectRequest
 import timber.log.Timber
 import javax.inject.Inject
@@ -25,7 +26,8 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(
     @NordicBleScanner private val bleScanner: BleScanner,
-    private val bleManager: BleManager
+    private val bleManager: BleManager,
+    private val reportRepository: ReportRepository
 ) : ViewModel() {
 
     var state by mutableStateOf(MainState())
@@ -112,9 +114,13 @@ class MainViewModel @Inject constructor(
     private fun initDeviceDataTransfer() {
         state = state.copy(isConnectedToDevice = true)
 
-        bleManager.commandState.onEach {
+        bleManager.commandState.onEach { command ->
+            command?.data?.let {
+                reportRepository.add(it)
+            }
+
             val temp = state.commands.toMutableList().run {
-                add(it)
+                add(command)
                 toList()
             }
 
