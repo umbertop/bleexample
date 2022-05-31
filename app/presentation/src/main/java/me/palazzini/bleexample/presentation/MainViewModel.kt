@@ -56,13 +56,13 @@ class MainViewModel @Inject constructor(
                 state = state.copy(isBluetoothEnabled = event.isEnabled)
 
                 state.permissions?.allPermissionsGranted?.let {
-                    if(event.isEnabled) observeBleDevices()
+                    if (event.isEnabled) observeBleDevices()
                 }
             }
             is MainEvent.OnPermissionsChanged -> {
                 state = state.copy(permissions = event.state)
 
-                if(event.state.allPermissionsGranted){
+                if (event.state.allPermissionsGranted) {
                     observeBleDevices()
                 }
             }
@@ -70,6 +70,7 @@ class MainViewModel @Inject constructor(
                 viewModelScope.launch {
                     bleManager.sendCommand(Command.Stop)
                     bleManager.disconnect().enqueue()
+                    reportRepository.flush()
                 }
 
                 state = state.copy(isConnectedToDevice = false)

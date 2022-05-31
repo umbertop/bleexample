@@ -29,6 +29,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.MultiplePermissionsState
+import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import me.palazzini.bleexample.core.context.showAppSettingsDialog
 import me.palazzini.bleexample.presentation.components.BleScanDeviceView
@@ -60,22 +61,7 @@ fun MainView(
         )
     }
 
-    val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        listOf(
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION,
-            Manifest.permission.BLUETOOTH_SCAN
-        )
-    } else {
-        listOf(
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        )
-    }
-
-    val permissionsState = rememberMultiplePermissionsState(
-        permissions = permissions
-    )
+    val permissionsState = GetPermissions()
 
     LaunchedEffect(key1 = Unit) {
         viewModel.uiEvent.collect { event ->
@@ -131,7 +117,33 @@ fun MainView(
 
 @ExperimentalPermissionsApi
 @Composable
-fun PermissionsDeniedView(permissionsState: MultiplePermissionsState) {
+private fun GetPermissions(): MultiplePermissionsState {
+    val commonPermissions = arrayOf(
+        Manifest.permission.ACCESS_FINE_LOCATION,
+        Manifest.permission.ACCESS_COARSE_LOCATION,
+        Manifest.permission.READ_EXTERNAL_STORAGE
+    )
+
+    val permissions = if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        listOf(
+            *commonPermissions,
+            Manifest.permission.BLUETOOTH_SCAN
+        )
+    } else if(Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+        listOf(
+            *commonPermissions,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+        )
+    } else {
+        listOf(*commonPermissions)
+    }
+
+    return rememberMultiplePermissionsState(permissions = permissions)
+}
+
+@ExperimentalPermissionsApi
+@Composable
+private fun PermissionsDeniedView(permissionsState: MultiplePermissionsState) {
     val spacing = LocalSpacing.current
 
     Column(
@@ -154,7 +166,7 @@ fun PermissionsDeniedView(permissionsState: MultiplePermissionsState) {
 
 @ExperimentalPermissionsApi
 @Composable
-fun LocationPermanentlyDeniedView() {
+private fun LocationPermanentlyDeniedView() {
     val spacing = LocalSpacing.current
     val context = LocalContext.current
 
@@ -179,7 +191,7 @@ fun LocationPermanentlyDeniedView() {
 @ExperimentalPermissionsApi
 @SuppressLint("MissingPermission")
 @Composable
-fun DevicesView(
+private fun DevicesView(
     viewModel: MainViewModel
 ) {
     val spacing = LocalSpacing.current

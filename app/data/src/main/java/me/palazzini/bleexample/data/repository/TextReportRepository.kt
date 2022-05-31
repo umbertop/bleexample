@@ -1,22 +1,19 @@
 package me.palazzini.bleexample.data.repository
 
-import android.content.Context
 import android.os.Environment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import me.palazzini.bleexample.domain.repository.ReportRepository
-import timber.log.Timber
 import java.io.File
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 
-class TextReportRepository(
-    private val context: Context
-) : ReportRepository {
+class TextReportRepository : ReportRepository {
 
     private var file: File? = null
+    private var outputStreamWriter: OutputStreamWriter? = null
 
-    init {
+    private fun createAndOpenFile() {
         val downloadsDirectory =
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
 
@@ -25,23 +22,29 @@ class TextReportRepository(
 
         parent.mkdirs()
         file?.createNewFile()
+
+        outputStreamWriter = OutputStreamWriter(file?.outputStream())
     }
 
-    override suspend fun add(text: String) = withContext(Dispatchers.IO) {
-        if (file == null || file?.outputStream() == null) {
-            Timber.w("add: Cannot open log file")
-            return@withContext
-        }
+    override suspend fun add(text: String) {
+        withContext(Dispatchers.IO) {
+            if (file == null || outputStreamWriter == null) {
+                createAndOpenFile()
+            }
 
-        val stream = OutputStreamWriter(file?.outputStream())
-        stream.appendLine(text)
-        stream.close()
+            outputStreamWriter?.appendLine(text)
+        }
+    }
+
+    override suspend fun flush() {
+        withContext(Dispatchers.IO) {
+            outputStreamWriter?.flush()
+        }
     }
 
     override suspend fun getAll(): List<String> = withContext(Dispatchers.IO) {
         if (file == null || file?.inputStream() == null) {
-            Timber.w("add: Cannot open log file")
-            return@withContext emptyList()
+            createAndOpenFile()
         }
 
         val stream = InputStreamReader(file?.inputStream())

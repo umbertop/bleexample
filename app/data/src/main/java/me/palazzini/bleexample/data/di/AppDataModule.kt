@@ -58,7 +58,5 @@ object AppDataModule {
 
     @Singleton
     @Provides
-    fun provideTextReportRepository(
-        @ApplicationContext context: Context
-    ) : ReportRepository = TextReportRepository(context)
+    fun provideTextReportRepository(): ReportRepository = TextReportRepository()
 }
